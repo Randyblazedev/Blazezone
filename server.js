@@ -256,7 +256,70 @@ app.post('/api/tutor', async (req, res) => {
 
 // Old keyword-matching system removed — replaced by OpenRouter API call above
 
+// ── Blaze Vault API ────────────────────────────────────────
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+
+const VAULT_DATA_PATH = '/home/bwg_data/vaults.json';
+
+function loadVaults() {
+  try {
+    if (existsSync(VAULT_DATA_PATH)) return JSON.parse(readFileSync(VAULT_DATA_PATH, 'utf8'));
+  } catch {}
+  return { users: {}, vaults: [] };
+}
+function saveVaults(d) { writeFileSync(VAULT_DATA_PATH, JSON.stringify(d, null, 2)); }
+
+app.post('/api/vault/create', async (req, res) => {
+  try {
+    const { username, name, amount, duration, goal, phone } = req.body;
+    if (!username || !name || !amount || !duration || !phone)
+      return res.status(400).json({ error: 'Missing fields' });
+    if (amount < 1000) return res.status(400).json({ error: 'Min 1,000 FCFA' });
+    const data = loadVaults();
+    const id = 'VLT-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase();
+    const vault = { id, username, name, amount: parseInt(amount), goal: goal || 'General', phone, duration: parseInt(duration), createdAt: new Date().toISOString(), unlockAt: new Date(Date.now() + parseInt(duration) * 30 * 86400000).toISOString(), status: 'locked', paymentRef: 'TEST-' + id };
+    if (!data.users[username]) data.users[username] = { username, vaults: [] };
+    data.users[username].vaults.push(id);
+    data.vaults.push(vault);
+    saveVaults(data);
+    res.json({ success: true, vault, message: `${amount.toLocaleString()} FCFA locked until ${new Date(vault.unlockAt).toLocaleDateString()}!` });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/vault/list', (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ error: 'Username required' });
+    const data = loadVaults();
+    const vaults = (data.vaults || []).filter(v => v.username === username);
+    const now = Date.now();
+    vaults.forEach(v => { if (v.status === 'locked' && now >= new Date(v.unlockAt).getTime()) v.status = 'unlocked'; });
+    saveVaults(data);
+    res.json({ vaults, stats: { totalLocked: vaults.filter(v=>v.status==='locked').reduce((s,v)=>s+v.amount,0), totalUnlocked: vaults.filter(v=>v.status==='unlocked').reduce((s,v)=>s+v.amount,0), activeCount: vaults.filter(v=>v.status==='locked').length, completedCount: vaults.filter(v=>v.status==='unlocked').length } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/vault/withdraw', (req, res) => {
+  try {
+    const { vaultId, username } = req.body;
+    if (!vaultId || !username) return res.status(400).json({ error: 'Missing fields' });
+    const data = loadVaults();
+    const vault = data.vaults.find(v => v.id === vaultId && v.username === username);
+    if (!vault) return res.status(404).json({ error: 'Vault not found' });
+    if (vault.status !== 'unlocked') return res.status(400).json({ error: 'Still locked until ' + new Date(vault.unlockAt).toLocaleDateString() });
+    vault.status = 'withdrawn';
+    saveVaults(data);
+    res.json({ success: true, message: `${vault.amount.toLocaleString()} FCFA withdrawn!` });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/vault/health', (req, res) => {
+  const data = loadVaults();
+  res.json({ status: 'ok', totalVaults: data.vaults.length, totalUsers: Object.keys(data.users || {}).length });
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`BlazeZone Upgrade Server running on port ${PORT}`);
   console.log(`Player: http://localhost:${PORT}/player?url=STREAM_URL&title=Movie`);
+  console.log(`Vault API: http://localhost:${PORT}/api/vault/health`);
 });
