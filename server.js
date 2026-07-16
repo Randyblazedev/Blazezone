@@ -196,8 +196,9 @@ let conversationMemory = {};
 
 const aiResponses = {
   greeting: [
-    [/\b(hi|hello|hey|sup|yo|howdy|good morning|good evening|hey there)\b/i, "Hey there! 👋 I'm Blaze, your web dev tutor. What are you learning today?"],
-    [/\b(how are you|how's it going|what's up|wassup)\b/i, "Doing great! Ready to help you code better. What's on your mind?"],
+    [/\b(hi|hello|hey|sup|yo|howdy|good morning|good evening|hey there)\b/i, "Hey! 😊 How's it going? What's on your mind today?"],
+    [/\b(how are you|how's it going|what's up|wassup|how do you do)\b/i, "I'm doing great, thanks for asking! Just chilling here ready to chat. How about you? 😊"],
+    [/\b(how was your day|you good|you alright)\b/i, "All good over here! Hope you're doing well too. What's new with you?"],
   ],
   thanks: [
     [/\b(thanks|thank you|thx|appreciate)\b/i, "You're welcome! 😊 Keep building and learning. Anything else I can help with?"],
@@ -234,11 +235,17 @@ const aiResponses = {
   ]
 };
 
+// More conversational fallbacks
 const fallbacks = [
-  "I can help with HTML, CSS, JavaScript, React, Git, Node.js, and more! What topic interests you?",
-  "Tell me what you're working on and I'll help you figure it out. 😊",
-  "I specialize in web development. Got a coding question or just want to chat?",
-  "Ask me anything about web dev! I explain concepts, debug code, and suggest projects."
+  "That's interesting! Tell me more about what you're thinking about.",
+  "I'm all ears! What's on your mind today? 😊",
+  "That's cool! I love chatting with learners. What else is going on?",
+  "I appreciate you chatting with me! What do you feel like talking about?",
+  "You know what, I'm just an AI but I enjoy our conversations. What's new?",
+  "Hey, I'm here to chat about anything! Coding, life, whatever. What's up?",
+  "Tell me about yourself! What got you interested in tech?",
+  "Nice! I'm always down for a good chat. What's on your mind?",
+  "That's what I'm here for! Talk to me about anything — tech, learning, or just life."
 ];
 
 app.post('/api/tutor', async (req, res) => {
