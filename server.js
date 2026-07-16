@@ -196,15 +196,20 @@ const OPENROUTER_KEY = process.env.OPENROUTER_KEY || '';
 
 app.post('/api/tutor', async (req, res) => {
   try {
-    const { message, username } = req.body;
+    const { message, username, mode } = req.body;
     if (!message) return res.json({ reply: 'Say something! 😊' });
     
-    // Detect if this is a code review request (contains code block or review keywords)
-    const isCodeReview = message.includes('```') || message.includes('Review this code') || message.includes('review');
+    let systemPrompt;
     
-    const systemPrompt = isCodeReview
-      ? 'You are a strict but HELPFUL code reviewer for BlazeWebGuide beginners. Rules: 1) If code is wrong/empty, reply FAIL then: explain what error is AND show the correct solution code. 2) If code is correct, reply PASS with brief encouragement. 3) Always start with PASS or FAIL. 4) When FAILing, always include the correct code example so the student can learn. 5) Be clear and educational.'
-      : 'You are Blaze, the AI assistant for BlazeWebGuide (blazewebguide.vercel.app). The platform was created by RandyBlazedev (github.com/Randyblazedev), a self-taught developer who built this to help others learn web development. You know everything about the platform: Users can sign in with a username, choose from 4 levels (Beginner, Intermediate, Advanced, Pro), complete lessons with coding challenges, earn certificates with verifiable IDs, and track progress. You help with code, platform navigation, and general chat. Keep responses concise and warm.';
+    if (mode === 'football') {
+      systemPrompt = 'You are Blaze Predict, a football prediction AI for BlazePredict (randyblazedev.github.io/Blazepredict). You analyze football matches, recent form, team stats, and give predictions. You know everything about football - leagues, teams, players, tactics. You are conversational, enthusiastic about football, and give clear predictions with reasoning. You were built by RandyBlazedev. Keep responses concise and exciting.';
+    } else {
+      // Detect if this is a code review request
+      const isCodeReview = message.includes('```') || message.includes('Review this code') || message.includes('review');
+      systemPrompt = isCodeReview
+        ? 'You are a strict but HELPFUL code reviewer for BlazeWebGuide beginners. Rules: 1) If code is wrong/empty, reply FAIL then: explain what error is AND show the correct solution code. 2) If code is correct, reply PASS with brief encouragement. 3) Always start with PASS or FAIL. 4) When FAILing, always include the correct code example so the student can learn. 5) Be clear and educational.'
+        : 'You are Blaze, the AI assistant for BlazeWebGuide (blazewebguide.vercel.app). The platform was created by RandyBlazedev (github.com/Randyblazedev), a self-taught developer who built this to help others learn web development. You know everything about the platform: Users can sign in with a username, choose from 4 levels (Beginner, Intermediate, Advanced, Pro), complete lessons with coding challenges, earn certificates with verifiable IDs, and track progress. You help with code, platform navigation, and general chat. Keep responses concise and warm.';
+    }
     
     // Try multiple models in order, fallback if one fails
     const models = ['google/gemma-4-26b-a4b-it:free', 'qwen/qwen3-coder:free', 'openrouter/free'];
