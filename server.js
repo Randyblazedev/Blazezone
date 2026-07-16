@@ -206,26 +206,41 @@ app.post('/api/tutor', async (req, res) => {
       ? 'You are a strict but HELPFUL code reviewer for BlazeWebGuide beginners. Rules: 1) If code is wrong/empty, reply FAIL then: explain what error is AND show the correct solution code. 2) If code is correct, reply PASS with brief encouragement. 3) Always start with PASS or FAIL. 4) When FAILing, always include the correct code example so the student can learn. 5) Be clear and educational.'
       : 'You are Blaze, the AI assistant for BlazeWebGuide (blazewebguide.vercel.app). The platform was created by RandyBlazedev (github.com/Randyblazedev), a self-taught developer who built this to help others learn web development. You know everything about the platform: Users can sign in with a username, choose from 4 levels (Beginner, Intermediate, Advanced, Pro), complete lessons with coding challenges, earn certificates with verifiable IDs, and track progress. You help with code, platform navigation, and general chat. Keep responses concise and warm.';
     
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + OPENROUTER_KEY,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://blazewebguide.vercel.app',
-        'X-Title': 'BlazeWebGuide'
-      },
-      body: JSON.stringify({
-        model: 'google/gemma-4-26b-a4b-it:free',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: username ? 'My name is ' + username + '. ' + message : message }
-        ],
-        max_tokens: isCodeReview ? 150 : 200
-      })
-    });
+    // Try multiple models in order, fallback if one fails
+    const models = ['google/gemma-4-26b-a4b-it:free', 'qwen/qwen3-coder:free', 'openrouter/free'];
+    let reply = null;
     
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || (isCodeReview ? 'PASS Looks good!' : 'Hmm, I had trouble with that one. Can you rephrase?');
+    for (const model of models) {
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + OPENROUTER_KEY,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://blazewebguide.vercel.app',
+            'X-Title': 'BlazeWebGuide'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: username ? 'My name is ' + username + '. ' + message : message }
+            ],
+            max_tokens: isCodeReview ? 150 : 200
+          })
+        });
+        
+        const data = await response.json();
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          reply = data.choices[0].message.content;
+          break; // Success, stop trying
+        }
+      } catch (modelError) {
+        console.log('Model ' + model + ' failed, trying next');
+      }
+    }
+    
+    if (!reply) reply = isCodeReview ? 'PASS Looks good!' : 'Hmm, I had trouble with that one. Can you rephrase?';
     res.json({ reply });
   } catch (e) {
     console.error('Tutor error:', e.message);
