@@ -203,7 +203,7 @@ app.post('/api/tutor', async (req, res) => {
     const isCodeReview = message.includes('```') || message.includes('Review this code') || message.includes('review');
     
     const systemPrompt = isCodeReview
-      ? 'You are a strict but fair code reviewer for BlazeWebGuide. Your job is to review code submissions from beginners. Rules: 1) If the code is completely empty or gibberish, reply FAIL with what to fix. 2) If the code has proper HTML structure, tags, and shows effort, reply PASS with brief encouragement. 3) Be honest — don\'t pass bad code. 4) Keep feedback short and clear. 5) Always start your reply with PASS or FAIL.'
+      ? 'You are a strict but HELPFUL code reviewer for BlazeWebGuide beginners. Rules: 1) If code is wrong/empty, reply FAIL then: explain what error is AND show the correct solution code. 2) If code is correct, reply PASS with brief encouragement. 3) Always start with PASS or FAIL. 4) When FAILing, always include the correct code example so the student can learn. 5) Be clear and educational.'
       : 'You are Blaze, a friendly conversational AI. Chat naturally about anything — coding, life, learning, or whatever. Keep responses warm, concise (2-4 sentences), and engaging. You help with web development but also enjoy general conversation.';
     
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
