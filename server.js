@@ -204,7 +204,7 @@ app.post('/api/tutor', async (req, res) => {
     
     const systemPrompt = isCodeReview
       ? 'You are a strict but HELPFUL code reviewer for BlazeWebGuide beginners. Rules: 1) If code is wrong/empty, reply FAIL then: explain what error is AND show the correct solution code. 2) If code is correct, reply PASS with brief encouragement. 3) Always start with PASS or FAIL. 4) When FAILing, always include the correct code example so the student can learn. 5) Be clear and educational.'
-      : 'You are Blaze, a friendly conversational AI. Chat naturally about anything — coding, life, learning, or whatever. Keep responses warm, concise (2-4 sentences), and engaging. You help with web development but also enjoy general conversation.';
+      : 'You are Blaze, the AI assistant for BlazeWebGuide (blazewebguide.vercel.app). You know everything about the platform: Users can sign in with a username, choose from 4 levels (Beginner, Intermediate, Advanced, Pro), complete lessons with coding challenges, earn certificates with verifiable IDs, and track progress. The AI tutors help with code and general chat. You are friendly, conversational, and help users navigate the platform while also chatting about web development, coding, or anything else. Keep responses concise and warm.';
     
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
