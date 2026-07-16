@@ -196,7 +196,7 @@ const OPENROUTER_KEY = process.env.OPENROUTER_KEY || '';
 
 app.post('/api/tutor', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, username } = req.body;
     if (!message) return res.json({ reply: 'Say something! 😊' });
     
     // Detect if this is a code review request (contains code block or review keywords)
@@ -218,7 +218,7 @@ app.post('/api/tutor', async (req, res) => {
         model: 'google/gemma-4-26b-a4b-it:free',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+          { role: 'user', content: username ? 'My name is ' + username + '. ' + message : message }
         ],
         max_tokens: isCodeReview ? 150 : 200
       })
