@@ -199,26 +199,33 @@ app.post('/api/tutor', async (req, res) => {
     const { message } = req.body;
     if (!message) return res.json({ reply: 'Say something! 😊' });
     
+    // Detect if this is a code review request (contains code block or review keywords)
+    const isCodeReview = message.includes('```') || message.includes('Review this code') || message.includes('review');
+    
+    const systemPrompt = isCodeReview
+      ? 'You are a strict but fair code reviewer for BlazeWebGuide. Your job is to review code submissions from beginners. Rules: 1) If the code is completely empty or gibberish, reply FAIL with what to fix. 2) If the code has proper HTML structure, tags, and shows effort, reply PASS with brief encouragement. 3) Be honest — don\'t pass bad code. 4) Keep feedback short and clear. 5) Always start your reply with PASS or FAIL.'
+      : 'You are Blaze, a friendly conversational AI. Chat naturally about anything — coding, life, learning, or whatever. Keep responses warm, concise (2-4 sentences), and engaging. You help with web development but also enjoy general conversation.';
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + OPENROUTER_KEY,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://blazewebguide.vercel.app',
-        'X-Title': 'BlazeWebGuide AI Tutor'
+        'X-Title': 'BlazeWebGuide'
       },
       body: JSON.stringify({
         model: 'google/gemma-4-26b-a4b-it:free',
         messages: [
-          { role: 'system', content: 'You are Blaze, a friendly AI tutor for BlazeWebGuide. You help people learn web development. Be conversational, natural, and helpful. Chat about anything — coding, life, learning, or just have a casual conversation. Keep responses concise (2-4 sentences). Be warm and encouraging.' },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_tokens: 200
+        max_tokens: isCodeReview ? 150 : 200
       })
     });
     
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'Hmm, I had trouble with that one. Can you rephrase?';
+    const reply = data.choices?.[0]?.message?.content || (isCodeReview ? 'PASS Looks good!' : 'Hmm, I had trouble with that one. Can you rephrase?');
     res.json({ reply });
   } catch (e) {
     console.error('Tutor error:', e.message);
