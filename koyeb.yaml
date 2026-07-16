@@ -1,0 +1,14 @@
+name: blazezone-api
+service:
+  port: 3002
+  health: /api/stream?tmdb=550
+regions:
+  - fra
+scalings:
+  - min: 0
+    max: 1
+env:
+  - key: PORT
+    value: "3002"
+  - key: NODE_VERSION
+    value: "20"
