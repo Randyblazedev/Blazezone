@@ -257,7 +257,7 @@ app.post('/api/tutor', async (req, res) => {
 // Old keyword-matching system removed — replaced by OpenRouter API call above
 
 // ── Blaze Vault API ────────────────────────────────────────
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+// existsSync, readFileSync, writeFileSync already imported above
 
 const VAULT_DATA_PATH = '/home/bwg_data/vaults.json';
 
