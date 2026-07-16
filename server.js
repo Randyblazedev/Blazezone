@@ -212,7 +212,9 @@ app.post('/api/tutor', async (req, res) => {
     }
     
     // Try multiple models in order, fallback if one fails
-    const models = ['google/gemma-4-26b-a4b-it:free', 'qwen/qwen3-coder:free', 'openrouter/free'];
+    const models = mode === 'football'
+      ? ['deepseek/deepseek-chat:free', 'google/gemma-4-26b-a4b-it:free', 'qwen/qwen3-coder:free', 'openrouter/free']
+      : ['google/gemma-4-26b-a4b-it:free', 'qwen/qwen3-coder:free', 'openrouter/free'];
     let reply = null;
     
     for (const model of models) {
