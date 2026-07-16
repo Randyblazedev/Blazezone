@@ -318,6 +318,52 @@ app.get('/api/vault/health', (req, res) => {
   res.json({ status: 'ok', totalVaults: data.vaults.length, totalUsers: Object.keys(data.users || {}).length });
 });
 
+// ── Screenshot Analysis (AI Vision for DLS Challenges) ──
+app.post('/api/vision/analyze', async (req, res) => {
+  try {
+    const { image, prompt } = req.body;
+    if (!image) return res.status(400).json({ error: 'Image data required' });
+    
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + OPENROUTER_KEY,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://dls-hub.vercel.app',
+        'X-Title': 'DLS Hub'
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.0-flash-001',
+        messages: [
+          { role: 'system', content: 'You analyze Dream League Soccer match result screenshots. Look at the image and determine: 1) The winning team name 2) The losing team name 3) The final score. Return ONLY a JSON object with keys: winner, loser, homeScore, awayScore. If you cannot clearly determine the result, return {"error": "Could not read result"}.' },
+          { role: 'user', content: [
+            { type: 'text', text: prompt || 'Read this DLS result screen and tell me the winner' },
+            { type: 'image_url', image_url: { url: image } }
+          ]}
+        ],
+        max_tokens: 200
+      })
+    });
+    
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '{"error":"AI could not process the image"}';
+    
+    // Try to parse JSON from the response
+    let result;
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      result = jsonMatch ? JSON.parse(jsonMatch[0]) : { raw: content };
+    } catch {
+      result = { raw: content };
+    }
+    
+    res.json(result);
+  } catch (e) {
+    console.error('Vision error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`BlazeZone Upgrade Server running on port ${PORT}`);
   console.log(`Player: http://localhost:${PORT}/player?url=STREAM_URL&title=Movie`);
