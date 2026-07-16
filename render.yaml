@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: blazezone-api
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/stream?tmdb=550
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_VERSION
+        value: 20
