@@ -192,83 +192,41 @@ app.get('/api/download', async (req, res) => {
 });
 
 // ── AI Tutor ────────────────────────────────────────
-let conversationMemory = {};
-
-const aiResponses = {
-  greeting: [
-    [/\b(hi|hello|hey|sup|yo|howdy|good morning|good evening|hey there)\b/i, "Hey! 😊 How's it going? What's on your mind today?"],
-    [/\b(how are you|how's it going|what's up|wassup|how do you do)\b/i, "I'm doing great, thanks for asking! Just chilling here ready to chat. How about you? 😊"],
-    [/\b(how was your day|you good|you alright)\b/i, "All good over here! Hope you're doing well too. What's new with you?"],
-  ],
-  thanks: [
-    [/\b(thanks|thank you|thx|appreciate)\b/i, "You're welcome! 😊 Keep building and learning. Anything else I can help with?"],
-  ],
-  about: [
-    [/\b(who are you|what are you|tell me about)\b/i, "I'm Blaze — your personal AI tutor for BlazeWebGuide! I help you learn web dev: HTML, CSS, JS, React, Node, Git, and more. Ask me anything!"],
-    [/\b(what can you do|help me|how can you)\b/i, "I can explain concepts, debug code, give examples, suggest projects, and guide your learning. Just ask!"],
-  ],
-  html: [
-    [/\b(html|tag|element|div|heading|paragraph|anchor|img)\b/i, "HTML structures web content with tags. Key elements: headings `<h1>-<h6>`, paragraphs `<p>`, links `<a>`, images `<img>`, containers `<div>`, `<span>`. Use semantic tags like `<header>`, `<nav>`, `<main>` for better accessibility. Need help with any specific tag?"],
-  ],
-  css: [
-    [/\b(css|style|styling|flexbox|grid|layout|responsive|animation)\b/i, "CSS makes HTML look good! Key concepts: selectors (`.class`, `#id`), box model (content → padding → border → margin), flexbox (1D layout), grid (2D layout). Use `box-sizing: border-box` for predictable sizing. Want me to dive into any CSS topic?"],
-  ],
-  js: [
-    [/\b(javascript|js|function|variable|promise|async|await|fetch|dom|array|object)\b/i, "JavaScript adds interactivity! Core concepts: variables (`const`/`let`), functions (arrow too!), DOM manipulation, events, promises/async for APIs. Start with basics then move to DOM → events → fetch. What part interests you?"],
-  ],
-  react: [
-    [/\b(react|component|state|hook|jsx|props|useState|useEffect)\b/i, "React is a component-based UI library. Each component returns JSX (HTML-like syntax). `useState` manages data, `useEffect` handles side effects. Props pass data from parent to child. Want to build something in React?"],
-  ],
-  git: [
-    [/\b(git|github|commit|push|pull|branch|merge|clone)\b/i, "Git tracks code changes! Basic flow: `git add .` → `git commit -m 'msg'` → `git push`. Use branches to work on features: `git checkout -b feature-name`. Merge back when done. Need help with a specific git problem?"],
-  ],
-  general: [
-    [/\b(motivate|motivation|stuck|overwhelmed|difficult|hard|frustrated)\b/i, "Learning web dev IS challenging, but you've got this! 💪\n\nTips: 1) Focus on one thing at a time. 2) Build small projects. 3) It's OK to struggle — every dev has been there. 4) Take breaks. 5) Ask questions.\n\nWhat are you working on right now?"],
-    [/\b(project|idea|build|create|make|suggest)\b/i, "Building projects is how you level up! 🚀\n\n**Beginner:** Portfolio site, todo app, weather app\n**Intermediate:** Blog platform, e-commerce page, chat app\n**Advanced:** Full-stack social app, real-time collab tool\n\nWhat's your current skill level? I'll suggest the perfect project!"],
-    [/\b(learn|study|course|roadmap|path|beginner|start)\b/i, "Great that you're starting your learning journey! Here's a roadmap:\n\n1️⃣ **HTML** (1-2 weeks) — Structure, forms, semantic tags\n2️⃣ **CSS** (2-3 weeks) — Styling, layouts, responsive\n3️⃣ **JavaScript** (4-6 weeks) — Logic, DOM, APIs\n4️⃣ **Git** (1 week) — Version control\n5️⃣ **React/Node** (6-8 weeks) — Modern stack\n\nStart with BlazeWebGuide's Beginner level! Each lesson builds on the last. 🎯"],
-  ],
-  casual: [
-    [/\b(weather|movie|music|game|food|sport|hobby)\b/i, "That sounds fun! 😊 When I'm not helping devs learn, I'm thinking about code. But I can definitely chat about that too! What else are you into?"],
-    [/\b(bye|goodbye|see you|later|cya)\b/i, "Catch you later! Keep coding and learning. I'm always here when you need help. 🚀"],
-    [/\b(yes|yeah|yep|sure|okay|ok)\b/i, "Awesome! What do you want to learn about specifically? I can dive deep into any web dev topic. 😊"],
-    [/\b(no|nah|nope|not really)\b/i, "No problem! Just let me know when you need help with something. I'm here for you!"],
-  ]
-};
-
-// More conversational fallbacks
-const fallbacks = [
-  "That's interesting! Tell me more about what you're thinking about.",
-  "I'm all ears! What's on your mind today? 😊",
-  "That's cool! I love chatting with learners. What else is going on?",
-  "I appreciate you chatting with me! What do you feel like talking about?",
-  "You know what, I'm just an AI but I enjoy our conversations. What's new?",
-  "Hey, I'm here to chat about anything! Coding, life, whatever. What's up?",
-  "Tell me about yourself! What got you interested in tech?",
-  "Nice! I'm always down for a good chat. What's on your mind?",
-  "That's what I'm here for! Talk to me about anything — tech, learning, or just life."
-];
+const OPENROUTER_KEY = process.env.OPENROUTER_KEY || '';
 
 app.post('/api/tutor', async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) return res.json({ reply: 'Say something! 😊' });
-    const msg = message.trim().toLowerCase();
     
-    let reply = null;
-    for (const [, responses] of Object.entries(aiResponses)) {
-      for (const [pattern, response] of responses) {
-        if (pattern.test(msg)) { reply = response; break; }
-      }
-      if (reply) break;
-    }
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + OPENROUTER_KEY,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://blazewebguide.vercel.app',
+        'X-Title': 'BlazeWebGuide AI Tutor'
+      },
+      body: JSON.stringify({
+        model: 'google/gemma-4-26b-a4b-it:free',
+        messages: [
+          { role: 'system', content: 'You are Blaze, a friendly AI tutor for BlazeWebGuide. You help people learn web development. Be conversational, natural, and helpful. Chat about anything — coding, life, learning, or just have a casual conversation. Keep responses concise (2-4 sentences). Be warm and encouraging.' },
+          { role: 'user', content: message }
+        ],
+        max_tokens: 200
+      })
+    });
     
-    if (!reply) reply = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-    
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'Hmm, I had trouble with that one. Can you rephrase?';
     res.json({ reply });
   } catch (e) {
-    res.json({ reply: 'My brain glitched! Can you repeat that? 😅' });
+    console.error('Tutor error:', e.message);
+    res.json({ reply: 'My brain glitched! Give me another try? 😅' });
   }
 });
+
+// Old keyword-matching system removed — replaced by OpenRouter API call above
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`BlazeZone Upgrade Server running on port ${PORT}`);
